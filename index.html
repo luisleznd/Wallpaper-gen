@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0f2027" />
+<meta name="description" content="Positive affirmation wallpapers that rotate three times a day, across ten mood categories." />
+<title>Affirmations — Daily Mood Wallpapers</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: #fff;
+    overflow: hidden;
+  }
+  #app {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    transition: background 1.2s ease;
+  }
+  .glow {
+    position: absolute;
+    top: 28%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 120vw; height: 70vh;
+    background: radial-gradient(ellipse at center, rgba(255,255,255,0.13), transparent 65%);
+    pointer-events: none;
+    animation: breathe 7s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+  ::-webkit-scrollbar { width: 6px; height: 0; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 18px 22px calc(18px + env(safe-area-inset-top)) 22px;
+    padding-top: max(18px, env(safe-area-inset-top));
+    font-size: 13px; letter-spacing: 0.08em; z-index: 2; gap: 8px; flex-wrap: wrap;
+  }
+  #segmentLabel { text-transform: uppercase; font-weight: 600; opacity: 0.85; }
+  .tabs { display: flex; gap: 6px; }
+  .tab-btn {
+    padding: 7px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+    cursor: pointer; color: #fff; border: 1.5px solid rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.05); backdrop-filter: blur(8px);
+    transition: all 0.2s ease; font-family: inherit;
+  }
+  .tab-btn.active { border-color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.18); }
+
+  main.view { flex: 1; z-index: 1; }
+
+  #homeMain {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 0 28px;
+  }
+  .eyebrow {
+    font-size: 12px; letter-spacing: 0.35em; text-transform: uppercase;
+    margin-bottom: 22px; font-weight: 600;
+  }
+  blockquote {
+    font-family: Georgia, 'Times New Roman', serif; font-style: italic;
+    font-size: clamp(26px, 5vw, 44px); line-height: 1.35; max-width: 680px; margin: 0;
+    text-shadow: 0 4px 30px rgba(0,0,0,0.35);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  blockquote.fading { opacity: 0; transform: translateY(8px); }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 38px; flex-wrap: wrap; justify-content: center; }
+  .btn {
+    padding: 12px 20px; border-radius: 999px; border: 1.5px solid rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.08); color: #fff; font-size: 14px; font-weight: 700;
+    cursor: pointer; backdrop-filter: blur(8px); font-family: inherit;
+  }
+  .btn.primary {
+    border: none; background: rgba(255,255,255,0.92); color: #1a1a2e;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+  }
+  .btn.fav { width: 48px; padding: 12px 0; font-size: 18px; }
+  .btn.fav.active { color: #ff8fa3; border-color: rgba(255,143,163,0.8); }
+
+  #moodNav {
+    display: flex; gap: 10px; padding: 16px 20px calc(24px + env(safe-area-inset-bottom)) 20px;
+    overflow-x: auto; z-index: 1;
+  }
+  .mood-chip {
+    flex-shrink: 0; padding: 10px 16px; border-radius: 999px;
+    border: 1.5px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.06);
+    color: #fff; font-size: 13.5px; font-weight: 500; cursor: pointer;
+    backdrop-filter: blur(8px); transition: all 0.25s ease; font-family: inherit; white-space: nowrap;
+  }
+  .mood-chip.active { border-color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.18); font-weight: 700; }
+
+  .panel { overflow-y: auto; padding: 8px 20px 30px; height: 100%; }
+  .panel-title {
+    font-family: Georgia, serif; font-style: italic; font-weight: 500;
+    font-size: 26px; text-align: center; margin: 6px 0 18px;
+    text-shadow: 0 2px 16px rgba(0,0,0,0.3);
+  }
+  .empty-text { text-align: center; opacity: 0.75; font-size: 14.5px; max-width: 420px; margin: 30px auto; line-height: 1.6; }
+  .card-list { display: flex; flex-direction: column; gap: 12px; max-width: 640px; margin: 0 auto; }
+  .card {
+    border-radius: 18px; padding: 16px 18px; border: 1px solid rgba(255,255,255,0.18);
+    backdrop-filter: blur(10px); box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+  }
+  .card-eyebrow { font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase; font-weight: 700; margin-bottom: 8px; }
+  .card-quote { font-family: Georgia, serif; font-style: italic; font-size: 17px; line-height: 1.5; }
+  .card-actions { display: flex; gap: 8px; margin-top: 14px; }
+  .small-btn {
+    padding: 7px 13px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+    cursor: pointer; color: #fff; border: 1.5px solid rgba(255,255,255,0.35);
+    background: rgba(255,255,255,0.08); font-family: inherit;
+  }
+
+  textarea {
+    width: 100%; box-sizing: border-box; resize: vertical; background: rgba(255,255,255,0.08);
+    color: #fff; border: 1.5px solid rgba(255,255,255,0.25); border-radius: 12px;
+    padding: 12px 14px; font-size: 15px; font-family: inherit; outline: none;
+  }
+  .mood-select-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+  .mood-select-chip {
+    padding: 6px 12px; border-radius: 999px; font-size: 12px; cursor: pointer; color: #fff;
+    border: 1.5px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.04); font-family: inherit;
+  }
+  .mood-select-chip.active { border-color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.18); font-weight: 700; }
+
+  .hidden { display: none !important; }
+
+  #installBanner {
+    position: fixed; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom));
+    background: rgba(20,20,30,0.92); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+    backdrop-filter: blur(10px); z-index: 10; box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+  }
+  #installBanner p { margin: 0; font-size: 13px; flex: 1; line-height: 1.4; }
+  #installBanner button {
+    flex-shrink: 0; padding: 9px 16px; border-radius: 999px; border: none;
+    background: #fff; color: #1a1a2e; font-weight: 700; font-size: 13px; cursor: pointer;
+  }
+  #installDismiss {
+    background: transparent; color: rgba(255,255,255,0.6); font-weight: 500; padding: 9px 10px;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="glow"></div>
+
+  <header>
+    <span id="segmentLabel"></span>
+    <nav class="tabs">
+      <button class="tab-btn active" data-view="home">Today</button>
+      <button class="tab-btn" data-view="favorites" id="favTab">♥ 0</button>
+      <button class="tab-btn" data-view="mine" id="mineTab">Mine</button>
+    </nav>
+  </header>
+
+  <main id="homeView" class="view">
+    <div id="homeMain">
+      <div class="eyebrow" id="moodEyebrow"></div>
+      <blockquote id="quoteText"></blockquote>
+      <div class="btn-row">
+        <button class="btn fav" id="favToggleBtn" title="Add to favorites">♡</button>
+        <button class="btn" id="shuffleBtn">↻ New affirmation</button>
+        <button class="btn primary" id="saveBtn">↓ Save wallpaper</button>
+      </div>
+    </div>
+    <nav id="moodNav"></nav>
+  </main>
+
+  <main id="favoritesView" class="view hidden">
+    <div class="panel">
+      <h2 class="panel-title">Favorites</h2>
+      <p class="empty-text hidden" id="favEmpty">No favorites yet. Tap the ♡ under any affirmation to keep it here.</p>
+      <div class="card-list" id="favList"></div>
+    </div>
+  </main>
+
+  <main id="mineView" class="view hidden">
+    <div class="panel">
+      <h2 class="panel-title">My affirmations</h2>
+      <div style="max-width:640px;margin:0 auto;">
+        <button class="btn primary" id="addToggleBtn" style="width:100%;margin-bottom:18px;">+ Write a new affirmation</button>
+        <div class="card" id="addForm" style="background:rgba(0,0,0,0.25);margin-bottom:18px;display:none;">
+          <textarea id="newText" rows="3" placeholder="Write it in the present tense — e.g., “I am building the career I deserve.”"></textarea>
+          <div class="mood-select-row" id="moodSelectRow"></div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn primary" id="saveCustomBtn">Save affirmation</button>
+            <button class="btn" id="cancelAddBtn">Cancel</button>
+          </div>
+        </div>
+        <p class="empty-text hidden" id="mineEmpty">Your own words are the most powerful ones. Custom affirmations join the daily rotation for their category.</p>
+        <div id="mineList"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="installBanner" class="hidden">
+  <p>Install this app on your home screen for quick daily access.</p>
+  <button id="installBtn">Install</button>
+  <button id="installDismiss">✕</button>
+</div>
+
+<script>
+// ————— Mood data (10 categories) —————
+const MOODS = {
+  calm: { label: "Calm", emoji: "🌊", colors: ["#0f2027","#203a43","#2c5364"], accent: "#9fd8df",
+    affirmations: ["I breathe in peace and breathe out tension.","Stillness is a strength I carry within me.","I release what I cannot control.","My mind is a quiet lake, clear and calm.","This moment is enough. I am enough.","Peace flows through me with every breath.","I move through my day with ease and grace.","Nothing needs to be rushed. I have time.","I am anchored, steady, and serene."] },
+  confidence: { label: "Confidence", emoji: "🔥", colors: ["#41295a","#2f0743","#8e2de2"], accent: "#f5c26b",
+    affirmations: ["I am capable of far more than I imagine.","My voice deserves to be heard.","I walk into every room knowing my worth.","Challenges reveal my strength, not my limits.","I trust my decisions and own my path.","I was built for this moment.","Doubt is a visitor. Confidence lives here.","Every step I take builds my momentum.","I show up boldly, exactly as I am."] },
+  gratitude: { label: "Gratitude", emoji: "🌻", colors: ["#c94b0c","#e8890c","#f5b942"], accent: "#fff3d6",
+    affirmations: ["I notice the small gifts hidden in ordinary days.","My life is full of things worth celebrating.","Gratitude turns what I have into enough.","Today, I choose to see abundance.","I am thankful for how far I've come.","Every sunrise is an invitation to begin again.","The people in my life are treasures.","I find joy in this exact moment.","Thankfulness softens my heart and opens my eyes."] },
+  energy: { label: "Energy", emoji: "⚡", colors: ["#f83600","#f9d423","#ff512f"], accent: "#ffffff",
+    affirmations: ["I am fueled by purpose and passion.","My energy creates my reality.","Today I move with intention and power.","I bring light into every space I enter.","Momentum is mine. I keep going.","My body is strong, my mind is sharp.","I turn obstacles into fuel.","Vitality flows through every part of me.","I wake up ready. I show up fully."] },
+  selflove: { label: "Self-Love", emoji: "💗", colors: ["#5f0a87","#a4508b","#e77fa3"], accent: "#ffe0ec",
+    affirmations: ["I treat myself with the kindness I give others.","I am worthy of rest, joy, and love.","My imperfections are part of my beauty.","I forgive myself and grow gently.","I am my own safe place.","Loving myself is not selfish — it is essential.","I honor my needs without apology.","I speak to myself like someone I love.","I am whole, exactly as I am today."] },
+  focus: { label: "Focus", emoji: "🎯", colors: ["#000428","#004e92","#2193b0"], accent: "#c2f0ff",
+    affirmations: ["One task, one breath, one step at a time.","My attention is my most valuable resource.","I choose depth over distraction.","Clarity comes when I slow down.","I finish what matters most first.","Distractions pass. My purpose stays.","I am fully present in what I do.","Small consistent efforts build great things.","My mind is clear and my direction is set."] },
+  motivation: { label: "Motivation", emoji: "🚀", colors: ["#1a2a6c","#b21f1f","#fdbb2d"], accent: "#ffd98a",
+    affirmations: ["I don't wait for motivation — I create it by starting.","Every expert was once a beginner who kept going.","Discipline today is freedom tomorrow.","I am closer than I was yesterday.","My goals are worth every ounce of effort.","Action cures fear. I take the first step.","I turn 'someday' into 'today.'","Progress, not perfection, moves me forward.","The best time to begin is right now."] },
+  rest: { label: "Rest", emoji: "🌙", colors: ["#141e30","#243b55","#3a2f5b"], accent: "#cbb8ff",
+    affirmations: ["Rest is productive. My body is healing.","I give myself permission to slow down.","The day is done. I did what I could.","Sleep restores me for tomorrow's possibilities.","I let go of today and welcome deep rest.","My worth is not measured by my busyness.","Quiet moments recharge my spirit.","I deserve this pause.","Tonight, I release every worry from my hands."] },
+  resilience: { label: "Resilience", emoji: "🌱", colors: ["#134e5e","#2c7744","#71b280"], accent: "#d8ffc2",
+    affirmations: ["I bend, but I do not break.","Every setback carries a lesson forward.","I have survived every hard day so far.","Storms pass. Roots grow deeper.","I rise each time, wiser and stronger.","Difficulty is shaping me, not stopping me.","My story includes comebacks, not just setbacks.","I adapt, I recover, I continue.","What challenges me today strengthens me tomorrow."] },
+  abundance: { label: "Abundance", emoji: "✨", colors: ["#3a1c71","#d76d77","#ffaf7b"], accent: "#ffe9c7",
+    affirmations: ["Opportunities flow toward me every day.","I have everything I need to begin.","There is more than enough for me.","I attract what I put into the world.","My possibilities expand as I grow.","Good things are on their way to me.","I celebrate others' wins — abundance is not a competition.","I am open to receiving all forms of good.","My life is rich with potential."] },
+};
+const MOOD_KEYS = Object.keys(MOODS);
+
+// ————— State —————
+let state = {
+  view: "home",
+  moodKey: "calm",
+  shuffleOffset: 0,
+  favorites: JSON.parse(localStorage.getItem("aff_favorites") || "[]"),
+  customs: JSON.parse(localStorage.getItem("aff_customs") || "{}"),
+};
+
+function persist() {
+  localStorage.setItem("aff_favorites", JSON.stringify(state.favorites));
+  localStorage.setItem("aff_customs", JSON.stringify(state.customs));
+}
+
+// ————— Time-of-day rotation (3x per day) —————
+function getSegment(date) {
+  const h = date.getHours();
+  if (h >= 5 && h < 12) return { key: 0, name: "Morning", icon: "☀️", next: "12:00 PM" };
+  if (h >= 12 && h < 18) return { key: 1, name: "Afternoon", icon: "🌤️", next: "6:00 PM" };
+  return { key: 2, name: "Evening", icon: "🌙", next: "5:00 AM" };
+}
+function pickIndex(date, segmentKey, moodKey, listLength, offset) {
+  const daySeed = date.getFullYear() * 372 + (date.getMonth() + 1) * 31 + date.getDate();
+  let hash = daySeed * 3 + segmentKey;
+  for (let i = 0; i < moodKey.length; i++) hash = (hash * 31 + moodKey.charCodeAt(i)) % 100000;
+  return (hash + offset) % listLength;
+}
+function currentPool(moodKey) {
+  const m = MOODS[moodKey];
+  return [...m.affirmations, ...(state.customs[moodKey] || [])];
+}
+function currentText() {
+  const now = new Date();
+  const segment = getSegment(now);
+  const pool = currentPool(state.moodKey);
+  const idx = pickIndex(now, segment.key, state.moodKey, pool.length, state.shuffleOffset);
+  return pool[idx];
+}
+
+// ————— Wallpaper PNG export —————
+function downloadWallpaper(mood, text, footerLabel) {
+  const W = 1080, H = 1920;
+  const canvas = document.createElement("canvas");
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d");
+
+  const grad = ctx.createLinearGradient(0, 0, W * 0.4, H);
+  mood.colors.forEach((c, i) => grad.addColorStop(i / (mood.colors.length - 1), c));
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+
+  const glow = ctx.createRadialGradient(W/2, H*0.42, 80, W/2, H*0.42, W*0.9);
+  glow.addColorStop(0, "rgba(255,255,255,0.14)");
+  glow.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+
+  for (let i = 0; i < 9000; i++) {
+    ctx.fillStyle = `rgba(255,255,255,${Math.random()*0.03})`;
+    ctx.fillRect(Math.random()*W, Math.random()*H, 1.5, 1.5);
+  }
+
+  ctx.fillStyle = mood.accent;
+  ctx.font = "600 34px Georgia, serif";
+  ctx.textAlign = "center";
+  ctx.globalAlpha = 0.85;
+  ctx.fillText(`—  ${mood.label.toUpperCase()}  —`, W/2, H*0.3);
+  ctx.globalAlpha = 1;
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "italic 74px Georgia, serif";
+  const words = text.split(" ");
+  const lines = []; let line = "";
+  for (const w of words) {
+    const test = line ? line + " " + w : w;
+    if (ctx.measureText(test).width > W*0.78 && line) { lines.push(line); line = w; }
+    else line = test;
+  }
+  if (line) lines.push(line);
+  const lh = 100;
+  const startY = H*0.44 - ((lines.length-1)*lh)/2;
+  ctx.shadowColor = "rgba(0,0,0,0.35)"; ctx.shadowBlur = 24;
+  lines.forEach((l,i) => ctx.fillText(l, W/2, startY + i*lh));
+  ctx.shadowBlur = 0;
+
+  ctx.fillStyle = mood.accent;
+  ctx.globalAlpha = 0.7;
+  ctx.font = "30px Georgia, serif";
+  ctx.fillText(footerLabel, W/2, H*0.88);
+  ctx.globalAlpha = 1;
+
+  const link = document.createElement("a");
+  link.download = `affirmation-${mood.label.toLowerCase()}.png`;
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+}
+
+// ————— Rendering —————
+const $ = (sel) => document.querySelector(sel);
+
+function applyBackground() {
+  const mood = MOODS[state.moodKey];
+  $("#app").style.background = `linear-gradient(160deg, ${mood.colors.join(", ")})`;
+}
+
+function renderHeader() {
+  const now = new Date();
+  const segment = getSegment(now);
+  const time = now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  $("#segmentLabel").textContent = `${segment.icon} ${segment.name} · ${time}`;
+  $("#favTab").textContent = `♥ ${state.favorites.length}`;
+  const customCount = Object.values(state.customs).reduce((a,l) => a + l.length, 0);
+  $("#mineTab").textContent = `Mine${customCount ? " · " + customCount : ""}`;
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.view === state.view);
+  });
+}
+
+let lastText = "";
+function renderHome() {
+  const mood = MOODS[state.moodKey];
+  const text = currentText();
+  $("#moodEyebrow").textContent = `— ${mood.label} —`;
+  $("#moodEyebrow").style.color = mood.accent;
+
+  const q = $("#quoteText");
+  if (lastText && lastText !== text) {
+    q.classList.add("fading");
+    setTimeout(() => { q.textContent = `“${text}”`; q.classList.remove("fading"); }, 300);
+  } else {
+    q.textContent = `“${text}”`;
+  }
+  lastText = text;
+
+  const isFav = state.favorites.some(f => f.text === text);
+  const favBtn = $("#favToggleBtn");
+  favBtn.textContent = isFav ? "♥" : "♡";
+  favBtn.classList.toggle("active", isFav);
+
+  const nav = $("#moodNav");
+  nav.innerHTML = "";
+  MOOD_KEYS.forEach(key => {
+    const m = MOODS[key];
+    const chip = document.createElement("button");
+    chip.className = "mood-chip" + (key === state.moodKey ? " active" : "");
+    chip.textContent = `${m.emoji} ${m.label}`;
+    chip.onclick = () => { state.moodKey = key; state.shuffleOffset = 0; renderAll(); };
+    nav.appendChild(chip);
+  });
+}
+
+function renderFavorites() {
+  const list = $("#favList");
+  list.innerHTML = "";
+  $("#favEmpty").classList.toggle("hidden", state.favorites.length > 0);
+  state.favorites.forEach(f => {
+    const m = MOODS[f.mood] || MOODS.calm;
+    const card = document.createElement("div");
+    card.className = "card";
+    card.style.background = `linear-gradient(135deg, ${m.colors[0]}cc, ${m.colors[m.colors.length-1]}cc)`;
+    card.innerHTML = `
+      <div class="card-eyebrow" style="color:${m.accent}">${m.emoji} ${m.label}</div>
+      <div class="card-quote">"${f.text}"</div>
+      <div class="card-actions">
+        <button class="small-btn" data-action="wallpaper">↓ Wallpaper</button>
+        <button class="small-btn" data-action="remove" style="color:#ff8fa3;border-color:rgba(255,143,163,0.5)">♥ Remove</button>
+      </div>`;
+    card.querySelector('[data-action="wallpaper"]').onclick = () => downloadWallpaper(m, f.text, m.label.toLowerCase() + " · favorite");
+    card.querySelector('[data-action="remove"]').onclick = () => {
+      state.favorites = state.favorites.filter(x => x.text !== f.text);
+      persist(); renderAll();
+    };
+    list.appendChild(card);
+  });
+}
+
+function renderMine() {
+  const customCount = Object.values(state.customs).reduce((a,l) => a + l.length, 0);
+  $("#mineEmpty").classList.toggle("hidden", customCount > 0);
+
+  const container = $("#mineList");
+  container.innerHTML = "";
+  Object.entries(state.customs).forEach(([mKey, list]) => {
+    if (!list.length) return;
+    const m = MOODS[mKey] || MOODS.calm;
+    const group = document.createElement("div");
+    group.style.marginBottom = "20px";
+    const heading = document.createElement("div");
+    heading.style.cssText = `font-size:11px;letter-spacing:0.25em;text-transform:uppercase;color:${m.accent};font-weight:700;margin:0 0 10px 4px;`;
+    heading.textContent = `${m.emoji} ${m.label}`;
+    group.appendChild(heading);
+    list.forEach(t => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.style.marginBottom = "10px";
+      card.style.background = `linear-gradient(135deg, ${m.colors[0]}cc, ${m.colors[m.colors.length-1]}cc)`;
+      card.innerHTML = `
+        <div class="card-quote">"${t}"</div>
+        <div class="card-actions">
+          <button class="small-btn" data-action="wallpaper">↓ Wallpaper</button>
+          <button class="small-btn" data-action="delete" style="color:#ffb3b3;border-color:rgba(255,179,179,0.5)">✕ Delete</button>
+        </div>`;
+      card.querySelector('[data-action="wallpaper"]').onclick = () => downloadWallpaper(m, t, "my affirmation");
+      card.querySelector('[data-action="delete"]').onclick = () => {
+        state.customs[mKey] = state.customs[mKey].filter(x => x !== t);
+        persist(); renderAll();
+      };
+      group.appendChild(card);
+    });
+    container.appendChild(group);
+  });
+}
+
+function renderAll() {
+  applyBackground();
+  renderHeader();
+  renderHome();
+  renderFavorites();
+  renderMine();
+}
+
+// ————— View switching —————
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.onclick = () => {
+    state.view = btn.dataset.view;
+    ["home","favorites","mine"].forEach(v => {
+      $("#" + v + "View").classList.toggle("hidden", v !== state.view);
+    });
+    renderAll();
+  };
+});
+
+// ————— Home actions —————
+$("#shuffleBtn").onclick = () => { state.shuffleOffset++; renderHome(); };
+$("#saveBtn").onclick = () => downloadWallpaper(MOODS[state.moodKey], currentText(), MOODS[state.moodKey].label.toLowerCase() + " · daily affirmation");
+$("#favToggleBtn").onclick = () => {
+  const text = currentText();
+  const exists = state.favorites.some(f => f.text === text);
+  if (exists) state.favorites = state.favorites.filter(f => f.text !== text);
+  else state.favorites.push({ text, mood: state.moodKey });
+  persist(); renderHome(); renderHeader(); renderFavorites();
+};
+
+// ————— Add custom affirmation —————
+let newMoodKey = state.moodKey;
+function buildMoodSelectRow() {
+  const row = $("#moodSelectRow");
+  row.innerHTML = "";
+  MOOD_KEYS.forEach(key => {
+    const m = MOODS[key];
+    const chip = document.createElement("button");
+    chip.className = "mood-select-chip" + (key === newMoodKey ? " active" : "");
+    chip.textContent = `${m.emoji} ${m.label}`;
+    chip.onclick = () => { newMoodKey = key; buildMoodSelectRow(); };
+    row.appendChild(chip);
+  });
+}
+$("#addToggleBtn").onclick = () => {
+  newMoodKey = state.moodKey;
+  buildMoodSelectRow();
+  $("#addForm").style.display = "block";
+  $("#addToggleBtn").style.display = "none";
+};
+$("#cancelAddBtn").onclick = () => {
+  $("#addForm").style.display = "none";
+  $("#addToggleBtn").style.display = "block";
+  $("#newText").value = "";
+};
+$("#saveCustomBtn").onclick = () => {
+  const text = $("#newText").value.trim();
+  if (!text) return;
+  if (!state.customs[newMoodKey]) state.customs[newMoodKey] = [];
+  state.customs[newMoodKey].push(text);
+  persist();
+  $("#newText").value = "";
+  $("#addForm").style.display = "none";
+  $("#addToggleBtn").style.display = "block";
+  state.moodKey = newMoodKey;
+  state.view = "home";
+  ["home","favorites","mine"].forEach(v => $("#" + v + "View").classList.toggle("hidden", v !== "home"));
+  renderAll();
+};
+
+// ————— Tick every 30s so segment/time updates live —————
+setInterval(renderAll, 30000);
+
+// ————— Initial render —————
+renderAll();
+
+// ————— PWA: service worker + install prompt —————
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js").catch(() => {});
+  });
+}
+
+let deferredPrompt = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  $("#installBanner").classList.remove("hidden");
+});
+$("#installBtn").onclick = async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  $("#installBanner").classList.add("hidden");
+};
+$("#installDismiss").onclick = () => $("#installBanner").classList.add("hidden");
+</script>
+</body>
+</html>
